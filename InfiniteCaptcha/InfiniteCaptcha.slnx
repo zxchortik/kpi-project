@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="InfiniteCaptcha.Api/InfiniteCaptcha.Api.csproj" />
+  <Project Path="InfiniteCaptcha.Client/InfiniteCaptcha.Client.csproj" />
+  <Project Path="InfiniteCaptcha.Shared/InfiniteCaptcha.Shared.csproj" />
+</Solution>
