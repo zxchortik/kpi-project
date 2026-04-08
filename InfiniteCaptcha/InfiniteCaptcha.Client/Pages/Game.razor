@@ -1,0 +1,120 @@
+@page "/game"
+@using InfiniteCaptcha.Shared.Models
+@inject HttpClient Http
+
+<PageTitle>Нескінченна Капча</PageTitle>
+
+<div class="container text-center mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h1 class="display-4 mb-4">Рівень: @currentLevel</h1>
+            
+            @if (challenge == null)
+            {
+                <div class="jumbotron shadow p-5 bg-light rounded">
+                    <h2>Готові перевірити свої нерви?</h2>
+                    <p class="lead">Капчі будуть ставати дедалі складнішими. Один хибний крок і все спочатку.</p>
+                    <button class="btn btn-primary btn-lg mt-3" @onclick="StartGame">ПОЧАТИ ГРУ</button>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-lg border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Розв'яжіть, щоб вижити</h4>
+                    </div>
+                    <div class="card-body p-5">
+                        <h2 class="mb-4" style="letter-spacing: 5px; font-family: 'Courier New', Courier, monospace;">
+                            @challenge.QuestionText
+                        </h2>
+                        
+                        <div class="input-group mb-3">
+                            <input @bind="userAnswer" 
+                                   @bind:event="oninput"
+                                   @onkeyup="HandleKeyUp"
+                                   class="form-control form-control-lg text-center" 
+                                   placeholder="Ваша відповідь..." 
+                                   focus />
+                        </div>
+                        
+                        <button class="btn btn-success btn-lg w-100" @onclick="CheckAnswer" disabled="@string.IsNullOrEmpty(userAnswer)">
+                            ПІДТВЕРДИТИ
+                        </button>
+                    </div>
+                    <div class="card-footer text-muted">
+                        Складність: @(currentLevel > 5 ? "Висока" : "Нормальна")
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(message))
+            {
+                <div class="alert @(message.Contains("ПОМИЛКА") ? "alert-danger" : "alert-success") mt-4 shadow-sm">
+                    @message
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private CaptchaChallengeDto? challenge;
+    private string userAnswer = "";
+    private string message = "";
+    private int currentLevel = 1;
+
+    async Task StartGame() 
+    {
+        currentLevel = 1;
+        message = "";
+        await LoadLevel(currentLevel);
+    }
+
+    async Task LoadLevel(int level)
+    {
+        try 
+        {
+            challenge = await Http.GetFromJsonAsync<CaptchaChallengeDto>($"api/captcha/generate/{level}");
+            userAnswer = "";
+        }
+        catch (Exception ex)
+        {
+            message = "Не вдалося з'єднатися з сервером. Перевірте, чи запущено API.";
+        }
+    }
+
+    async Task CheckAnswer()
+    {
+        if (challenge == null) return;
+
+        var attempt = new CaptchaAttemptDto 
+        { 
+            ChallengeId = challenge.Id, 
+            Answer = userAnswer 
+        };
+
+        var response = await Http.PostAsJsonAsync("api/captcha/verify", attempt);
+        var result = await response.Content.ReadFromJsonAsync<CaptchaResultDto>();
+
+        if (result != null && result.IsSuccess)
+        {
+            message = "Чудово! Наступний рівень...";
+            currentLevel++;
+            challenge = result.NextChallenge;
+            userAnswer = "";
+        }
+        else
+        {
+            message = "Не вірно...Гру закінчено. Ваш рекорд: " + (currentLevel - 1);
+            challenge = null;
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrEmpty(userAnswer))
+        {
+            await CheckAnswer();
+        }
+    }
+}
