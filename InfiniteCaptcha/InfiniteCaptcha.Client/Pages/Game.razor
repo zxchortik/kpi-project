@@ -14,6 +14,13 @@
                 <div class="jumbotron shadow p-5 bg-light rounded">
                     <h2>Готові перевірити свої нерви?</h2>
                     <p class="lead">Капчі будуть ставати дедалі складнішими. Один хибний крок і все спочатку.</p>
+
+                    <div class="form-group mb-4 mt-4 text-start">
+                        <label class="fw-bold mb-2">Ваше ім'я (для таблиці лідерів):</label>
+                        <input @bind="playerName" class="form-control form-control-lg"
+                               placeholder="Введіть ваш нікнейм..." />
+                    </div>
+                    
                     <button class="btn btn-primary btn-lg mt-3" @onclick="StartGame">ПОЧАТИ ГРУ</button>
                 </div>
             }
@@ -29,15 +36,12 @@
                         </h2>
                         
                         <div class="input-group mb-3">
-                            <input @bind="userAnswer" 
-                                   @bind:event="oninput"
-                                   @onkeyup="HandleKeyUp"
-                                   class="form-control form-control-lg text-center" 
-                                   placeholder="Ваша відповідь..." 
-                                   focus />
+                            <input @bind="userAnswer" @bind:event="oninput" @onkeyup="HandleKeyUp"
+                                   class="form-control form-control-lg text-center" placeholder="Ваша відповідь..." focus />
                         </div>
                         
-                        <button class="btn btn-success btn-lg w-100" @onclick="CheckAnswer" disabled="@string.IsNullOrEmpty(userAnswer)">
+                        <button class="btn btn-success btn-lg w-100" @onclick="CheckAnswer"
+                                disabled="@string.IsNullOrEmpty(userAnswer)">
                             ПІДТВЕРДИТИ
                         </button>
                     </div>
@@ -62,8 +66,9 @@
     private string userAnswer = "";
     private string message = "";
     private int currentLevel = 1;
+    private string playerName = "";
 
-    async Task StartGame() 
+    async Task StartGame()
     {
         currentLevel = 1;
         message = "";
@@ -72,12 +77,12 @@
 
     async Task LoadLevel(int level)
     {
-        try 
+        try
         {
             challenge = await Http.GetFromJsonAsync<CaptchaChallengeDto>($"api/captcha/generate/{level}");
             userAnswer = "";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             message = "Не вдалося з'єднатися з сервером. Перевірте, чи запущено API.";
         }
@@ -87,10 +92,12 @@
     {
         if (challenge == null) return;
 
-        var attempt = new CaptchaAttemptDto 
-        { 
-            ChallengeId = challenge.Id, 
-            Answer = userAnswer 
+        var attempt = new CaptchaAttemptDto
+        {
+            ChallengeId = challenge.Id,
+            Answer = userAnswer,
+            PlayerName = string.IsNullOrWhiteSpace(playerName) ? "Anonimus" : playerName,
+            CurrentLevel = currentLevel
         };
 
         var response = await Http.PostAsJsonAsync("api/captcha/verify", attempt);

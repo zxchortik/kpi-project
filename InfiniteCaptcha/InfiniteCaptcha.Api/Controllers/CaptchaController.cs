@@ -35,8 +35,8 @@ namespace InfiniteCaptcha.Api.Controllers
                 var newRecord = new PlayerRecord
                 {
                     Id = Guid.NewGuid(),
-                    PlayerName = "Anonimus",
-                    HighestLevel = 1,
+                    PlayerName = string.IsNullOrWhiteSpace(attempt.PlayerName) ? "Anonimus" : attempt.PlayerName,
+                    HighestLevel = attempt.CurrentLevel - 1,
                     AchievedAt = DateTime.UtcNow
                 };
 
@@ -47,8 +47,8 @@ namespace InfiniteCaptcha.Api.Controllers
             var result = new CaptchaResultDto
             {
                 IsSuccess = isCorrect,
-                CurrentScore = isCorrect ? 1 : 0,
-                NextChallenge = isCorrect ? _captchaService.GenerateChallenge(2) : null
+                CurrentScore = isCorrect ? attempt.CurrentLevel : 0,
+                NextChallenge = isCorrect ? _captchaService.GenerateChallenge(attempt.CurrentLevel + 1) : null
             };
 
             return Ok(result);

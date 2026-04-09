@@ -4,4 +4,6 @@ public class CaptchaAttemptDto
 {
     public Guid ChallengeId { get; set; }
     public string Answer { get; set; } = string.Empty;
+    public string PlayerName { get; set; } = "Anonimus";
+    public int CurrentLevel { get; set; }
 }
