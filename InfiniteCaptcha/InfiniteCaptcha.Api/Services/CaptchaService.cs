@@ -5,7 +5,6 @@ namespace InfiniteCaptcha.Api.Services
 {
     public class CaptchaService : ICaptchaService
     {
-        // Тимчасове сховище у пам'яті (Key: ID капчі, Value: Правильна відповідь)
         private static readonly ConcurrentDictionary<Guid, string> _answers = new();
 
         public CaptchaChallengeDto GenerateChallenge(int level)
@@ -15,14 +14,14 @@ namespace InfiniteCaptcha.Api.Services
             string question;
             int correctAnswer;
 
-            if (level <= 5) 
+            if (level <= 5)
             {
                 int a = random.Next(1, 10);
                 int b = random.Next(1, 10);
                 question = $"{a} + {b} = ?";
                 correctAnswer = a + b;
-            } 
-            else 
+            }
+            else
             {
                 int a = random.Next(10, 50);
                 int b = random.Next(2, 10);

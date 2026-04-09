@@ -1,18 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using InfiniteCaptcha.Api.Services;
 using InfiniteCaptcha.Shared.Models;
+using InfiniteCaptcha.Api.Data;
 
 namespace InfiniteCaptcha.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] 
+    [Route("api/[controller]")]
     public class CaptchaController : ControllerBase
     {
         private readonly ICaptchaService _captchaService;
+        private readonly AppDbContext _context;
 
-        public CaptchaController(ICaptchaService captchaService)
+        public CaptchaController(ICaptchaService captchaService, AppDbContext context)
         {
             _captchaService = captchaService;
+            _context = context;
         }
 
         [HttpGet("generate/{level}")]
@@ -27,10 +30,24 @@ namespace InfiniteCaptcha.Api.Controllers
         {
             bool isCorrect = _captchaService.VerifyAnswer(attempt.ChallengeId, attempt.Answer);
 
+            if (!isCorrect)
+            {
+                var newRecord = new PlayerRecord
+                {
+                    Id = Guid.NewGuid(),
+                    PlayerName = "Anonimus",
+                    HighestLevel = 1,
+                    AchievedAt = DateTime.UtcNow
+                };
+
+                _context.PlayerRecords.Add(newRecord);
+                _context.SaveChanges();
+            }
+
             var result = new CaptchaResultDto
             {
                 IsSuccess = isCorrect,
-                CurrentScore = isCorrect ? 1 : 0, 
+                CurrentScore = isCorrect ? 1 : 0,
                 NextChallenge = isCorrect ? _captchaService.GenerateChallenge(2) : null
             };
 
