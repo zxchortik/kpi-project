@@ -1,0 +1,73 @@
+@page "/leaderboard"
+@using InfiniteCaptcha.Shared.Models
+@inject HttpClient Http
+
+<PageTitle>Таблиця лідерів</PageTitle>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4 display-5">🏆 Зал Слави 🏆</h2>
+
+    @if (topPlayers == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Завантаження...</span>
+            </div>
+            <p class="mt-2">Шукаємо героїв...</p>
+        </div>
+    }
+    else if (!topPlayers.Any())
+    {
+        <div class="alert alert-info text-center shadow-sm">
+            Поки що немає жодного рекорду. Станьте першим!
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive shadow rounded">
+            <table class="table table-hover table-striped mb-0 text-center align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Місце</th>
+                        <th>Гравець</th>
+                        <th>Рівень</th>
+                        <th>Дата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < topPlayers.Count; i++)
+                    {
+                        var player = topPlayers[i];
+                        <tr>
+                            <td>
+                                @if (i == 0) { <span>🥇</span> }
+                                else if (i == 1) { <span>🥈</span> }
+                                else if (i == 2) { <span>🥉</span> }
+                                else { <strong>@(i + 1)</strong> }
+                            </td>
+                            <td class="fw-bold text-primary">@player.PlayerName</td>
+                            <td><span class="badge bg-success fs-6">@player.HighestLevel</span></td>
+                            <td class="text-muted">@player.AchievedAt.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<PlayerRecordDto>? topPlayers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            topPlayers = await Http.GetFromJsonAsync<List<PlayerRecordDto>>("api/captcha/leaderboard");
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("Помилка завантаження таблиці лідерів.");
+        }
+    }
+}

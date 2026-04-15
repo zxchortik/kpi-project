@@ -36,7 +36,7 @@ namespace InfiniteCaptcha.Api.Controllers
                 {
                     Id = Guid.NewGuid(),
                     PlayerName = string.IsNullOrWhiteSpace(attempt.PlayerName) ? "Anonimus" : attempt.PlayerName,
-                    HighestLevel = attempt.CurrentLevel - 1,
+                    HighestLevel = attempt.CurrentLevel - 1, 
                     AchievedAt = DateTime.UtcNow
                 };
 
@@ -52,6 +52,23 @@ namespace InfiniteCaptcha.Api.Controllers
             };
 
             return Ok(result);
+        }
+
+        [HttpGet("leaderboard")]
+        public ActionResult<IEnumerable<PlayerRecordDto>> GetLeaderboard()
+        {
+            var topPlayers = _context.PlayerRecords
+                .OrderByDescending(r => r.HighestLevel) 
+                .ThenBy(r => r.AchievedAt) 
+                .Select(r => new PlayerRecordDto
+                {
+                    PlayerName = r.PlayerName,
+                    HighestLevel = r.HighestLevel,
+                    AchievedAt = r.AchievedAt
+                })
+                .ToList();
+
+            return Ok(topPlayers);
         }
     }
 }
