@@ -1,52 +1,75 @@
 @page "/leaderboard"
 @using InfiniteCaptcha.Shared.Models
 @inject HttpClient Http
+@inject NavigationManager Navigation
 
-<PageTitle>Таблиця лідерів</PageTitle>
+<PageTitle>Зал Слави — Нескінченна Капча</PageTitle>
 
-<div class="container mt-5">
-    <h2 class="text-center mb-4 display-5">🏆 Зал Слави 🏆</h2>
+<style>
+    .fade-in {
+        animation: fadeIn 0.8s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .table-container {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+</style>
+
+<div class="container mt-5 fade-in">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-primary">🏆 ЗАЛ СЛАВИ 🏆</h1>
+        <p class="lead text-muted">Найкращі гравці, які змогли вижити</p>
+    </div>
 
     @if (topPlayers == null)
     {
-        <div class="text-center">
-            <div class="spinner-border text-primary" role="status">
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Завантаження...</span>
             </div>
-            <p class="mt-2">Шукаємо героїв...</p>
+            <p class="mt-3 fs-5">Шукаємо легенд...</p>
         </div>
     }
     else if (!topPlayers.Any())
     {
-        <div class="alert alert-info text-center shadow-sm">
-            Поки що немає жодного рекорду. Станьте першим!
+        <div class="alert alert-info text-center shadow-sm p-4 rounded-pill">
+            <h4 class="mb-0">Поки що немає жодного рекорду. Станьте першим!</h4>
         </div>
     }
     else
     {
-        <div class="table-responsive shadow rounded">
+        <div class="table-responsive shadow-lg table-container">
             <table class="table table-hover table-striped mb-0 text-center align-middle">
                 <thead class="table-dark">
-                    <tr>
-                        <th>Місце</th>
-                        <th>Гравець</th>
-                        <th>Рівень</th>
-                        <th>Дата</th>
+                    <tr style="height: 60px;">
+                        <th class="fs-5">Місце</th>
+                        <th class="fs-5">Гравець</th>
+                        <th class="fs-5">Рівень</th>
+                        <th class="fs-5">Дата рекорду</th>
                     </tr>
                 </thead>
                 <tbody>
                     @for (int i = 0; i < topPlayers.Count; i++)
                     {
                         var player = topPlayers[i];
-                        <tr>
-                            <td>
-                                @if (i == 0) { <span>🥇</span> }
-                                else if (i == 1) { <span>🥈</span> }
-                                else if (i == 2) { <span>🥉</span> }
-                                else { <strong>@(i + 1)</strong> }
+                        <tr style="height: 70px;">
+                            <td class="fs-4">
+                                @if (i == 0) { <span title="Перше місце">🥇</span> }
+                                else if (i == 1) { <span title="Друге місце">🥈</span> }
+                                else if (i == 2) { <span title="Третє місце">🥉</span> }
+                                else { <span class="text-muted fw-bold">@(i + 1)</span> }
                             </td>
-                            <td class="fw-bold text-primary">@player.PlayerName</td>
-                            <td><span class="badge bg-success fs-6">@player.HighestLevel</span></td>
+                            <td class="fw-bold text-primary fs-5">@player.PlayerName</td>
+                            <td>
+                                <span class="badge bg-success px-3 py-2 fs-5 rounded-pill">
+                                    @player.HighestLevel рівень
+                                </span>
+                            </td>
                             <td class="text-muted">@player.AchievedAt.ToLocalTime().ToString("g")</td>
                         </tr>
                     }
@@ -54,6 +77,12 @@
             </table>
         </div>
     }
+
+    <div class="mt-5 text-center mb-5">
+        <button class="btn btn-outline-primary btn-lg rounded-pill px-5" @onclick="GoHome">
+            🏠 ПОВЕРНУТИСЯ В МЕНЮ
+        </button>
+    </div>
 </div>
 
 @code {
@@ -69,5 +98,10 @@
         {
             Console.WriteLine("Помилка завантаження таблиці лідерів.");
         }
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
     }
 }

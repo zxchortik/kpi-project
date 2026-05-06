@@ -1,7 +1,40 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Головне Меню</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container text-center mt-5 fade-in">
+    <h1 class="display-3 mb-3 fw-bold text-primary" style="letter-spacing: 2px;">
+        НЕСКІНЧЕННА КАПЧА
+    </h1>
+    <p class="lead text-muted mb-5">Виживи якомога довше, розв'язуючи задачі.</p>
+    
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 d-flex flex-column gap-4">
+            <a href="/game" class="btn btn-primary btn-lg py-4 fs-3 shadow rounded-pill text-white text-decoration-none">
+                🎮 ПОЧАТИ ГРУ
+            </a>
+            
+            <a href="/leaderboard" class="btn btn-dark btn-lg py-3 fs-4 shadow-sm rounded-pill text-white text-decoration-none">
+                🏆 ТАБЛИЦЯ ЛІДЕРІВ
+            </a>
+        </div>
+    </div>
+</div>
 
-Welcome to your new app.
+<style>
+    .fade-in {
+        animation: fadeIn 0.8s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+</style>

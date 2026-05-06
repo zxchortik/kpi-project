@@ -1,61 +1,106 @@
 @page "/game"
 @using InfiniteCaptcha.Shared.Models
+@using System.Threading
+@implements IDisposable
 @inject HttpClient Http
 
 <PageTitle>Нескінченна Капча</PageTitle>
 
+<style>
+
+    .fade-in { animation: fadeIn 0.6s ease-out; }
+    .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @@keyframes shake {
+        10%, 90% { transform: translate3d(-1px, 0, 0); }
+        20%, 80% { transform: translate3d(2px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+        40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+
+    .timer-badge {
+        transition: all 0.3s ease;
+        min-width: 80px;
+    }
+</style>
+
 <div class="container text-center mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <h1 class="display-4 mb-4">Рівень: @currentLevel</h1>
             
-            @if (challenge == null)
+            @if (isGameOver)
             {
-                <div class="jumbotron shadow p-5 bg-light rounded">
+                <div class="card shadow-lg border-danger fade-in">
+                    <div class="card-header bg-danger text-white">
+                        <h3 class="mb-0">ГРУ ЗАКІНЧЕНО</h3>
+                    </div>
+                    <div class="card-body p-5">
+                        <h1 class="display-1 mb-3">☠️</h1>
+                        <h3 class="text-danger mb-4">@errorMessage</h3>
+                        <h4 class="mb-4">Ваш рекорд: <span class="badge bg-dark fs-4">@(currentLevel - 1)</span></h4>
+                        
+                        <button class="btn btn-danger btn-lg w-100 mb-3" @onclick="StartGame">СПРОБУВАТИ ЩЕ РАЗ</button>
+                        <a href="/leaderboard" class="btn btn-outline-dark w-100">ТАБЛИЦЯ ЛІДЕРІВ</a>
+                    </div>
+                </div>
+            }
+            else if (challenge == null)
+            {
+                <h1 class="display-4 mb-4">Нескінченна Капча</h1>
+                <div class="jumbotron shadow p-5 bg-light rounded fade-in">
                     <h2>Готові перевірити свої нерви?</h2>
-                    <p class="lead">Капчі будуть ставати дедалі складнішими. Один хибний крок і все спочатку.</p>
+                    <p class="lead">Капчі стають складнішими. Один хибний крок — і все спочатку.</p>
 
                     <div class="form-group mb-4 mt-4 text-start">
-                        <label class="fw-bold mb-2">Ваше ім'я (для таблиці лідерів):</label>
+                        <label class="fw-bold mb-2">Ваш нікнейм:</label>
                         <input @bind="playerName" class="form-control form-control-lg"
-                               placeholder="Введіть ваш нікнейм..." />
+                               placeholder="Введіть ім'я..." />
                     </div>
                     
-                    <button class="btn btn-primary btn-lg mt-3" @onclick="StartGame">ПОЧАТИ ГРУ</button>
+                    <button class="btn btn-primary btn-lg w-100" @onclick="StartGame" disabled="@string.IsNullOrWhiteSpace(playerName)">
+                        ПОЧАТИ ГРУ
+                    </button>
                 </div>
             }
             else
             {
-                <div class="card shadow-lg border-primary">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">Розв'яжіть, щоб вижити</h4>
+                <h1 class="display-4 mb-4">Рівень: @currentLevel</h1>
+                <div class="card shadow-lg border-primary @animationClass">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Розв'яжіть задачу</h4>
+                        <span class="badge timer-badge @(timeLeft <= 5 ? "bg-danger" : "bg-warning text-dark") fs-5">
+                            ⏳ @timeLeft сек
+                        </span>
                     </div>
                     <div class="card-body p-5">
-                        <h2 class="mb-4" style="letter-spacing: 5px; font-family: 'Courier New', Courier, monospace;">
+                        <h2 class="mb-4" style="letter-spacing: 3px; font-family: 'Courier New', Courier, monospace;">
                             @challenge.QuestionText
                         </h2>
                         
                         <div class="input-group mb-3">
                             <input @bind="userAnswer" @bind:event="oninput" @onkeyup="HandleKeyUp"
-                                   class="form-control form-control-lg text-center" placeholder="Ваша відповідь..." focus />
+                                   class="form-control form-control-lg text-center" 
+                                   placeholder="Відповідь тут..." autofocus />
                         </div>
                         
-                        <button class="btn btn-success btn-lg w-100" @onclick="CheckAnswer"
-                                disabled="@string.IsNullOrEmpty(userAnswer)">
-                            ПІДТВЕРДИТИ
+                        <button class="btn btn-success btn-lg w-100" @onclick="() => CheckAnswer(false)"
+                                disabled="@(string.IsNullOrEmpty(userAnswer) || isChecking)">
+                            @if (isChecking) { <span>Перевірка...</span> } else { <span>ПІДТВЕРДИТИ</span> }
                         </button>
                     </div>
-                    <div class="card-footer text-muted">
-                        Складність: @(currentLevel > 5 ? "Висока" : "Нормальна")
-                    </div>
                 </div>
-            }
 
-            @if (!string.IsNullOrEmpty(message))
-            {
-                <div class="alert @(message.Contains("ПОМИЛКА") ? "alert-danger" : "alert-success") mt-4 shadow-sm">
-                    @message
-                </div>
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success mt-4 shadow-sm fade-in">
+                        @successMessage
+                    </div>
+                }
             }
         </div>
     </div>
@@ -64,14 +109,23 @@
 @code {
     private CaptchaChallengeDto? challenge;
     private string userAnswer = "";
-    private string message = "";
+    private string successMessage = "";
+    private string errorMessage = "";
     private int currentLevel = 1;
     private string playerName = "";
+    private string animationClass = "";
+    private bool isChecking = false;
+    private bool isGameOver = false;
+
+    private int timeLeft = 30;
+    private CancellationTokenSource? timerCts;
 
     async Task StartGame()
     {
+        isGameOver = false;
         currentLevel = 1;
-        message = "";
+        successMessage = "";
+        errorMessage = "";
         await LoadLevel(currentLevel);
     }
 
@@ -81,39 +135,92 @@
         {
             challenge = await Http.GetFromJsonAsync<CaptchaChallengeDto>($"api/captcha/generate/{level}");
             userAnswer = "";
+            animationClass = "fade-in"; 
+            
+            StartTimer();
+            StateHasChanged();
         }
         catch (Exception)
         {
-            message = "Не вдалося з'єднатися з сервером. Перевірте, чи запущено API.";
+            errorMessage = "Помилка зв'язку з API.";
+            isGameOver = true;
+            challenge = null;
         }
     }
 
-    async Task CheckAnswer()
+    private void StartTimer()
     {
-        if (challenge == null) return;
+        timerCts?.Cancel();
+        timerCts = new CancellationTokenSource();
+        timeLeft = 30;
+        
+        _ = TimerLoop(timerCts.Token);
+    }
+
+    private async Task TimerLoop(CancellationToken token)
+    {
+        while (timeLeft > 0 && !token.IsCancellationRequested)
+        {
+            await Task.Delay(1000, token);
+            if (!token.IsCancellationRequested)
+            {
+                timeLeft--;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        if (timeLeft == 0 && !token.IsCancellationRequested)
+        {
+            await InvokeAsync(() => CheckAnswer(true));
+        }
+    }
+
+    async Task CheckAnswer(bool isTimeout)
+    {
+        if (challenge == null || isChecking) return;
+
+        isChecking = true;
+        timerCts?.Cancel(); 
 
         var attempt = new CaptchaAttemptDto
         {
             ChallengeId = challenge.Id,
-            Answer = userAnswer,
+            Answer = isTimeout ? "TIMEOUT_EXPIRED" : userAnswer,
             PlayerName = string.IsNullOrWhiteSpace(playerName) ? "Anonimus" : playerName,
             CurrentLevel = currentLevel
         };
 
-        var response = await Http.PostAsJsonAsync("api/captcha/verify", attempt);
-        var result = await response.Content.ReadFromJsonAsync<CaptchaResultDto>();
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/captcha/verify", attempt);
+            var result = await response.Content.ReadFromJsonAsync<CaptchaResultDto>();
 
-        if (result != null && result.IsSuccess)
-        {
-            message = "Чудово! Наступний рівень...";
-            currentLevel++;
-            challenge = result.NextChallenge;
-            userAnswer = "";
+            if (result != null && result.IsSuccess)
+            {
+                successMessage = "Чудово! Наступний рівень...";
+                currentLevel++;
+                await LoadLevel(currentLevel);
+            }
+            else
+            {
+                isGameOver = true;
+                successMessage = "";
+                errorMessage = isTimeout 
+                    ? "⏳ Час вийшов!" 
+                    : "❌ Не вірно!";
+                challenge = null;
+            }
         }
-        else
+        catch (Exception)
         {
-            message = "Не вірно...Гру закінчено. Ваш рекорд: " + (currentLevel - 1);
+            isGameOver = true;
+            errorMessage = "Не в цей раз";
             challenge = null;
+        }
+        finally
+        {
+            isChecking = false;
+            StateHasChanged();
         }
     }
 
@@ -121,7 +228,13 @@
     {
         if (e.Key == "Enter" && !string.IsNullOrEmpty(userAnswer))
         {
-            await CheckAnswer();
+            await CheckAnswer(false);
         }
+    }
+
+    public void Dispose()
+    {
+        timerCts?.Cancel();
+        timerCts?.Dispose();
     }
 }
