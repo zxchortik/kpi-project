@@ -28,6 +28,18 @@ namespace InfiniteCaptcha.Api.Controllers
         [HttpPost("verify")]
         public ActionResult<CaptchaResultDto> Verify([FromBody] CaptchaAttemptDto attempt)
         {
+            // --- 1. ПЕРЕВІРКА СЕКРЕТНОГО КЛЮЧА ---
+            var extractedApiKey = HttpContext.Request.Headers["X-API-KEY"].FirstOrDefault();
+            var realApiKey = "SuperSecretKpiKey2026!"; // Наш пароль
+
+            if (string.IsNullOrEmpty(extractedApiKey) || extractedApiKey != realApiKey)
+            {
+                // Якщо ключа немає або він неправильний — видаємо помилку 401
+                return Unauthorized("Доступ заборонено: невірний API ключ.");
+            }
+            // ------------------------------------
+
+            // 2. Стара логіка гри залишається без змін
             bool isCorrect = _captchaService.VerifyAnswer(attempt.ChallengeId, attempt.Answer);
 
             if (!isCorrect)
@@ -36,7 +48,7 @@ namespace InfiniteCaptcha.Api.Controllers
                 {
                     Id = Guid.NewGuid(),
                     PlayerName = string.IsNullOrWhiteSpace(attempt.PlayerName) ? "Anonimus" : attempt.PlayerName,
-                    HighestLevel = attempt.CurrentLevel - 1, 
+                    HighestLevel = attempt.CurrentLevel - 1,
                     AchievedAt = DateTime.UtcNow
                 };
 
@@ -58,8 +70,8 @@ namespace InfiniteCaptcha.Api.Controllers
         public ActionResult<IEnumerable<PlayerRecordDto>> GetLeaderboard()
         {
             var topPlayers = _context.PlayerRecords
-                .OrderByDescending(r => r.HighestLevel) 
-                .ThenBy(r => r.AchievedAt) 
+                .OrderByDescending(r => r.HighestLevel)
+                .ThenBy(r => r.AchievedAt)
                 .Select(r => new PlayerRecordDto
                 {
                     PlayerName = r.PlayerName,
