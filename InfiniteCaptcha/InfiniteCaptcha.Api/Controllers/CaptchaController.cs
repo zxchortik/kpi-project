@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using InfiniteCaptcha.Api.Services;
 using InfiniteCaptcha.Shared.Models;
 using InfiniteCaptcha.Api.Data;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace InfiniteCaptcha.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting("fixed")]
     public class CaptchaController : ControllerBase
     {
         private readonly ICaptchaService _captchaService;
@@ -28,18 +30,14 @@ namespace InfiniteCaptcha.Api.Controllers
         [HttpPost("verify")]
         public ActionResult<CaptchaResultDto> Verify([FromBody] CaptchaAttemptDto attempt)
         {
-            // --- 1. ПЕРЕВІРКА СЕКРЕТНОГО КЛЮЧА ---
             var extractedApiKey = HttpContext.Request.Headers["X-API-KEY"].FirstOrDefault();
-            var realApiKey = "SuperSecretKpiKey2026!"; // Наш пароль
+            var realApiKey = "SuperSecretKpiKey2026!";
 
             if (string.IsNullOrEmpty(extractedApiKey) || extractedApiKey != realApiKey)
             {
-                // Якщо ключа немає або він неправильний — видаємо помилку 401
                 return Unauthorized("Доступ заборонено: невірний API ключ.");
             }
-            // ------------------------------------
 
-            // 2. Стара логіка гри залишається без змін
             bool isCorrect = _captchaService.VerifyAnswer(attempt.ChallengeId, attempt.Answer);
 
             if (!isCorrect)

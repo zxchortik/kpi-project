@@ -1,6 +1,7 @@
 using InfiniteCaptcha.Api.Data;
 using InfiniteCaptcha.Api.Services;
 using InfiniteCaptcha.Shared.Models;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 10;
+        opt.QueueLimit = 0;
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 var app = builder.Build();
 
 
@@ -29,6 +42,8 @@ var app = builder.Build();
 app.UseCors("AllowAll");
 
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.MapControllers();
 
