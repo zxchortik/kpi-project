@@ -14,9 +14,13 @@ builder.Services.AddSingleton<ICaptchaService, CaptchaService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("ProductionPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(
+                "https://kpi-captcha-game.onrender.com",
+                "https://localhost:7111",
+                "http://localhost:5111"
+              )
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -39,7 +43,7 @@ var app = builder.Build();
 
 //app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
+app.UseCors("ProductionPolicy");
 
 app.UseAuthorization();
 
